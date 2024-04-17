@@ -6,6 +6,12 @@ pub struct Message {
     body: Transaction
 }
 
+impl Message {
+    pub fn new(id: MessageID, body: Transaction) -> Self {
+        Self { id, body }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Transaction {
@@ -28,4 +34,14 @@ pub struct Delete {}
 pub struct Insert {}
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
-struct MessageID(String);
+pub struct MessageID(String);
+
+impl MessageID {
+    pub fn new() -> Self {
+        MessageID(String::from("id"))
+    }
+
+    pub fn from(id: &dyn AsRef<str>) -> Self {
+        MessageID(id.as_ref().to_string())
+    }
+}

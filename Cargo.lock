@@ -3,9 +3,19 @@
 version = 3
 
 [[package]]
+name = "bincode"
+version = "1.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "distributed-client"
 version = "0.1.0"
 dependencies = [
+ "bincode",
  "models",
  "serde",
  "serde_json",
@@ -15,6 +25,7 @@ dependencies = [
 name = "distributed-server"
 version = "0.1.0"
 dependencies = [
+ "bincode",
  "models",
  "serde",
  "serde_json",
