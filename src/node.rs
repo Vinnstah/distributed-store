@@ -21,3 +21,13 @@ impl Node {
 
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct NodeID(String);
+
+impl NodeID {
+    pub fn new() -> Self {
+        NodeID(String::from("id"))
+    }
+
+    pub fn from(id: &dyn AsRef<str>) -> Self {
+        NodeID(id.as_ref().to_string())
+    }
+}
