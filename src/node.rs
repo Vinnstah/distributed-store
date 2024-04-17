@@ -6,7 +6,7 @@ use crate::store::Store;
 pub struct Node {
     id: NodeID,
     #[serde(rename = "ngb")]
-    neighbours: Vec<Node>,
+    neighbour: NodeID,
     store: Store
 }
 
