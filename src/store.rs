@@ -24,17 +24,23 @@ impl Store {
 pub struct Elements(HashMap<String, String>);
 
 pub trait Transactions {
-    fn insert(&mut self, element: Element);
-    fn get(&self, key: String) -> Option<Element>;
+    type Key;
+    type Value;
+
+    fn insert(&mut self, element: Element<Self::Key, Self::Value>);
+    fn get(&self, key: String) -> Option<Element<Self::Key, Self::Value>>;
     fn delete(&mut self, key: String) -> bool;
 }
 
 impl Transactions for Store {
-    fn insert(&mut self, element: Element) {
+    type Key = String;
+    type Value = String;
+
+    fn insert(&mut self, element: Element<String, String>) {
         self.elements.0.entry(element.key).or_insert(element.value);
     }
 
-    fn get(&self, key: String) -> Option<Element> {
+    fn get(&self, key: String) -> Option<Element<String, String>> {
         match self.elements.0.get(&key) {
             Some(value) => Some(Element::new(key, value.into())),
             None => None,
@@ -50,13 +56,13 @@ impl Transactions for Store {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct Element {
-    key: String,
-    value: String,
+pub struct Element<K, V> {
+    key: K,
+    value: V,
 }
 
-impl Element {
-    pub fn new(key: String, value: String) -> Self {
+impl<K,V> Element<K, V> {
+    pub fn new(key: K, value: V) -> Self {
         Self { key, value }
     }
 }
