@@ -1,7 +1,7 @@
+use crate::node::NodeID;
+use models::messages::Transaction;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
-
-use crate::{messages::Transaction, node::NodeID};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Store {
@@ -61,7 +61,7 @@ pub struct Element<K, V> {
     value: V,
 }
 
-impl<K,V> Element<K, V> {
+impl<K, V> Element<K, V> {
     pub fn new(key: K, value: V) -> Self {
         Self { key, value }
     }
