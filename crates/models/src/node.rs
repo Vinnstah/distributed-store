@@ -1,7 +1,7 @@
 use crate::store::Store;
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct Node {
     id: NodeID,
     #[serde(rename = "ngb")]
@@ -27,7 +27,7 @@ impl NodeID {
         NodeID(String::from("id"))
     }
 
-    pub fn from(id: &dyn AsRef<str>) -> Self {
+    pub fn from<T: AsRef<str>>(id: T) -> Self {
         NodeID(id.as_ref().to_string())
     }
 }

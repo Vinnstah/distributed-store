@@ -1,21 +1,37 @@
 use serde::{Deserialize, Serialize};
 
+use crate::node::Node;
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Message {
-    id: MessageID,
-    body: Transaction
+    pub id: MessageID,
+    #[serde(rename = "type")]
+    pub message_type: Type
 }
 
 impl Message {
-    pub fn new(id: MessageID, body: Transaction) -> Self {
-        Self { id, body }
+    pub fn new(id: MessageID, message_type: Type) -> Self {
+        Self { id, message_type }
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
+pub enum Type {
+    Request(Transaction),
+    Response(Response)
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum Response {
+    InitOk(Node)
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
 pub enum Transaction {
-    Init(Init),
+    Init,
     Gossip(Gossip),
     Delete(Delete),
     Insert(Insert)

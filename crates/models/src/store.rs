@@ -1,5 +1,4 @@
-use crate::node::NodeID;
-use models::messages::Transaction;
+use crate::{messages::Transaction, node::NodeID};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 

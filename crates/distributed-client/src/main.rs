@@ -1,7 +1,8 @@
-use models::messages::{self, Init, Message, MessageID, Transaction};
+use models::messages::{self, Init, Message, MessageID, Transaction, Type};
+use models::node::Node;
 use serde::Serialize;
-use std::env;
-use std::io::Write;
+use std::{env, thread};
+use std::io::{Read, Write};
 use std::net::TcpStream;
 
 fn main() -> std::io::Result<()> {
@@ -14,9 +15,14 @@ fn main() -> std::io::Result<()> {
         .expect("Failed to parse arg as u16");
 
     let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
-    
-    let message = Message::new(MessageID::new(), Transaction::Init(Init {}));
-    let bytes = bincode::serialize(&message).expect("Failed to serialize message");
-    stream.write(&bytes);
+    thread::spawn(move ||  {
+        let mut buffer = [0; 1024];
+        let message = Message::new(MessageID::new(), Type::Request(Transaction::Init));
+        let bytes = bincode::serialize(&message).expect("Failed to serialize message");
+        stream.write(&bytes);
+        stream.read(&mut buffer);
+        println!("{:#?}", bincode::deserialize::<Node>(&buffer));
+    });
+    loop {}
     Ok(())
 }
