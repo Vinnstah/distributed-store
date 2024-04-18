@@ -30,8 +30,8 @@ fn main() -> std::io::Result<()> {
         };
 
         stream.read(&mut buffer);
-
-        println!("{:#?}", bincode::deserialize::<Message>(&buffer));
+        println!("Received message for {}", port);
+        // println!("{:#?}", bincode::deserialize::<Message>(&buffer));
         let Ok(message) = bincode::deserialize::<Message>(&buffer) else {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
@@ -42,7 +42,7 @@ fn main() -> std::io::Result<()> {
         match message.message_type {
             Type::Request(transaction) => {
                 let node = handle_transactions(transaction, port, message.neighbour);
-                println!("{:#?}", node);
+                // println!("{:#?}", node);
                 let Ok(byte_node) = bincode::serialize(&node) else {
                     return Err(io::Error::new(
                         io::ErrorKind::Other,

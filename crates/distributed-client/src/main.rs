@@ -1,9 +1,10 @@
 use distributed_client::memory::ClientMemory;
 use models::message::{CircularList, Message, MessageID, Transaction, Type};
 use models::node::{Node, NodeID};
+use std::collections::VecDeque;
 use std::io::{Read, Write};
 use std::net::TcpStream;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::{env, thread};
 
 fn main() -> std::io::Result<()> {
@@ -15,33 +16,48 @@ fn main() -> std::io::Result<()> {
         .parse()
         .expect("Failed to parse arg as u16");
 
-    let list_of_servers = CircularList::new(vec![port, port + 1, port + 2]);
-    let mut client_memory = Mutex::new(ClientMemory::<String>::new(CircularList::new(vec![
-        NodeID::from_u16(port),
-        NodeID::from_u16(port + 1),
-        NodeID::from_u16(port + 2),
-    ])));
-    let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
-    thread::spawn(move || {
-        let message = Message::new(
-            MessageID::new(),
-            Type::Request(Transaction::Init),
-            NodeID::from_u16(*list_of_servers.neighbour(0)),
-        );
+    let list_of_servers = Arc::new(CircularList::new(vec![port, port + 1, port + 2]));
 
-        let bytes = bincode::serialize(&message).expect("Failed to serialize message");
-        stream.write(&bytes);
+    <VecDeque<u16> as Clone>::clone(&list_of_servers.elements)
+        .into_iter()
+        .for_each(|port| {
+            let handle = thread::spawn(move || {
+                let mut client_memory = Arc::new(Mutex::new(ClientMemory::<String>::new(
+                    CircularList::new(vec![
+                        NodeID::from_u16(port),
+                        NodeID::from_u16(port + 1),
+                        NodeID::from_u16(port + 2),
+                    ]),
+                )));
+                let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
+                let message = Message::new(
+                    MessageID::new(),
+                    Type::Request(Transaction::Init),
+                    NodeID::from_u16(port + 1), // NodeID::from_u16(*list_of_servers.neighbour(list_of_servers.elements)),
+                );
 
-        client_memory
-            .get_mut()
-            .unwrap()
-            .insert_value_for_nodes("2".to_string(), vec![message.neighbour]);
-        let mut buffer = [0; 1024];
-        stream.read(&mut buffer);
-        // println!("{:#?}", bincode::deserialize::<Node>(&buffer));
-        println!("{:#?}", &client_memory);
-    });
+                let bytes = bincode::serialize(&message).expect("Failed to serialize message");
+                stream.write(&bytes);
+
+                println!("Sent message to {}", port);
+
+                let mut buffer = [0; 1024];
+                stream.try_clone().unwrap().read(&mut buffer);
+
+                stream.flush();
+                client_memory
+                    .lock()
+                    .unwrap()
+                    .insert_value_for_nodes("2".to_string(), vec![]);
+                println!("{:#?}", &client_memory);
+            });
+            
+            handle.join().unwrap();
+        });
+
+    // println!("{:#?}", bincode::deserialize::<Node>(&buffer));
+
     loop {}
 }
 
-pub fn initialize_nodes() {}
+pub fn initialize_nodes(list_of_servers: CircularList<NodeID>) {}
