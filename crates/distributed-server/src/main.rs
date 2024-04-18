@@ -1,9 +1,10 @@
-use std::{env, io};
 use std::io::{Read, Write};
 use std::net::TcpListener;
+use std::{env, io};
 
+use models::message::{Response, Type};
 use models::{
-    messages::{Message, Transaction},
+    message::{Message, Transaction},
     node::{Node, NodeID},
 };
 
@@ -22,37 +23,52 @@ fn main() -> std::io::Result<()> {
 
     for stream in listener.incoming() {
         let Ok(mut stream) = stream else {
-            return Err(io::Error::new(io::ErrorKind::NotFound, "Could not unwrap TcpStream"))
+            return Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "Could not unwrap TcpStream",
+            ));
         };
-        
+
         stream.read(&mut buffer);
 
         println!("{:#?}", bincode::deserialize::<Message>(&buffer));
         let Ok(message) = bincode::deserialize::<Message>(&buffer) else {
-            return Err(io::Error::new(io::ErrorKind::InvalidData, "Could not deserialize message"))
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Could not deserialize message",
+            ));
         };
 
         match message.message_type {
-            models::messages::Type::Request(request) => {
-                let node = handle_transactions(request);
+            Type::Request(transaction) => {
+                let node = handle_transactions(transaction, port, message.neighbour);
                 println!("{:#?}", node);
                 let Ok(byte_node) = bincode::serialize(&node) else {
-                    return Err(io::Error::new(io::ErrorKind::Other, "Could not serialize Node"))
+                    return Err(io::Error::new(
+                        io::ErrorKind::Other,
+                        "Could not serialize Node",
+                    ));
                 };
                 stream.write(&byte_node);
             }
-            models::messages::Type::Response(response) => todo!(),
+            Type::Response(response) => handle_response(response),
         }
-
     }
     Ok(())
 }
 
-pub fn handle_transactions(transaction: Transaction) -> Node {
+pub fn handle_transactions(transaction: Transaction, port: u16, neighbour: NodeID) -> Node {
     match transaction {
-        Transaction::Init => Node::new(NodeID::new(), NodeID::from("id2")),
+        Transaction::Init => Node::new(NodeID::from(port.to_string()), neighbour),
         Transaction::Gossip(_) => todo!(),
         Transaction::Delete(_) => todo!(),
         Transaction::Insert(_) => todo!(),
+        Transaction::Fetch(_) => todo!(),
+    }
+}
+
+pub fn handle_response(response: Response) {
+    match response {
+        Response::InitOk(_) => {}
     }
 }

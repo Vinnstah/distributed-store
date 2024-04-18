@@ -30,4 +30,8 @@ impl NodeID {
     pub fn from<T: AsRef<str>>(id: T) -> Self {
         NodeID(id.as_ref().to_string())
     }
+
+    pub fn from_u16(id: u16) -> Self {
+        NodeID(id.to_string())
+    }
 }

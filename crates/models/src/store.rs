@@ -1,4 +1,4 @@
-use crate::{messages::Transaction, node::NodeID};
+use crate::{message::Transaction, node::NodeID};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 

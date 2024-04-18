@@ -1,3 +1,3 @@
-pub mod messages;
+pub mod message;
 pub mod node;
 pub mod store;
