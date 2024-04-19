@@ -53,7 +53,10 @@ pub struct Gossip {}
 pub struct Delete {}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct Insert {}
+pub struct Insert {
+    id: MessageID,
+    value: u16
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Fetch {}

@@ -1,6 +1,6 @@
 use distributed_client::memory::ClientMemory;
 use models::message::{CircularList, Message, MessageID, Transaction, Type};
-use models::node::{Node, NodeID};
+use models::node::NodeID;
 use std::collections::VecDeque;
 use std::io::{Read, Write};
 use std::net::TcpStream;
@@ -45,13 +45,21 @@ fn main() -> std::io::Result<()> {
                 stream.try_clone().unwrap().read(&mut buffer);
 
                 stream.flush();
+
+                let message = Message::new(
+                    MessageID::new(),
+                    Type::Request(Transaction::Init),
+                    NodeID::from_u16(port + 1), // NodeID::from_u16(*list_of_servers.neighbour(list_of_servers.elements)),
+                );
+
                 client_memory
                     .lock()
                     .unwrap()
                     .insert_value_for_nodes("2".to_string(), vec![]);
+
                 println!("{:#?}", &client_memory);
             });
-            
+
             handle.join().unwrap();
         });
 
@@ -61,3 +69,7 @@ fn main() -> std::io::Result<()> {
 }
 
 pub fn initialize_nodes(list_of_servers: CircularList<NodeID>) {}
+
+pub fn dispatch_messages(amount: u16) {
+    
+}
