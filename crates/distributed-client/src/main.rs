@@ -1,4 +1,5 @@
 use distributed_client::memory::ClientMemory;
+use distributed_client::message_dispatch::{create_message_stack, dispatch_messages};
 use models::message::{CircularList, Message, MessageID, Transaction, Type};
 use models::node::NodeID;
 use std::collections::VecDeque;
@@ -24,10 +25,11 @@ fn main() -> std::io::Result<()> {
             NodeID::from_u16(port + 2),
         ],
     ))));
-    let servers = initialize_nodes(list_of_servers);
-    println!("{:#?}", &client_memory);
-    println!("{:#?}", &servers);
-    // println!("{:#?}", bincode::deserialize::<Node>(&buffer));
+    let servers = vec![port, port + 1, port + 2];
+    // let servers = initialize_nodes(list_of_servers);
+
+    let message_stack = create_message_stack(9);
+    dispatch_messages(message_stack, servers);
 
     loop {}
 }
@@ -46,16 +48,16 @@ pub fn initialize_nodes(list_of_servers: Arc<CircularList<u16>>) -> Vec<u16> {
                 let message = Message::new(
                     MessageID::new(),
                     Type::Request(Transaction::Init),
-                    NodeID::from_u16(port + 1), // NodeID::from_u16(*list_of_servers.neighbour(list_of_servers.elements)),
+                    Some(NodeID::from_u16(port + 1)), // NodeID::from_u16(*list_of_servers.neighbour(list_of_servers.elements)),
                 );
-
+                // println!("Message {:#?}", &message);
                 let bytes = bincode::serialize(&message).expect("Failed to serialize message");
                 stream.write(&bytes);
 
-                println!("Sent message to {}", port);
+                // println!("Sent message to {}", port);
 
                 let mut buffer = [0; 1024];
-                stream.try_clone().unwrap().read(&mut buffer);
+                stream.read(&mut buffer);
 
                 stream.flush();
                 initialized_nodes.lock().unwrap()[index] = Some(port);
@@ -70,8 +72,6 @@ pub fn initialize_nodes(list_of_servers: Arc<CircularList<u16>>) -> Vec<u16> {
         .into_iter()
         .flatten()
         .collect();
-    
+
     list_of_intialized_servers
 }
-
-pub fn dispatch_messages(amount: u16) {}

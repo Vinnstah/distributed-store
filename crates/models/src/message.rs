@@ -11,12 +11,16 @@ pub struct Message {
     #[serde(rename = "type")]
     pub message_type: Type,
     #[serde(rename = "ngb")]
-    pub neighbour: NodeID,
+    pub neighbour: Option<NodeID>,
 }
 
 impl Message {
-    pub fn new(id: MessageID, message_type: Type, neighbour: NodeID) -> Self {
-        Self { id, message_type, neighbour }
+    pub fn new(id: MessageID, message_type: Type, neighbour: Option<NodeID>) -> Self {
+        Self {
+            id,
+            message_type,
+            neighbour,
+        }
     }
 }
 
@@ -31,6 +35,7 @@ pub enum Type {
 #[serde(rename_all = "lowercase")]
 pub enum Response {
     InitOk(Node),
+    InsertOk(Node)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -40,7 +45,7 @@ pub enum Transaction {
     Gossip(Gossip),
     Delete(Delete),
     Insert(Insert),
-    Fetch(Fetch)
+    Fetch(Fetch),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -55,7 +60,13 @@ pub struct Delete {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Insert {
     id: MessageID,
-    value: u16
+    value: u16,
+}
+
+impl Insert {
+    pub fn new(id: MessageID, value: u16) -> Self {
+        Self { id, value }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -81,14 +92,16 @@ pub struct CircularList<T> {
 
 impl<NodeID> CircularList<NodeID> {
     pub fn new(elements: Vec<NodeID>) -> Self {
-        Self { elements: VecDeque::from(elements) }
+        Self {
+            elements: VecDeque::from(elements),
+        }
     }
-    
+
     pub fn neighbour(&self, index: usize) -> &NodeID {
         if index == self.elements.len() - 1 {
-            return self.elements.get(0).expect("No neighbour at 0")
+            return self.elements.get(0).expect("No neighbour at 0");
         } else {
-            return &self.elements[index+1]
+            return &self.elements[index + 1];
         }
     }
 }
