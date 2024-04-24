@@ -19,8 +19,8 @@ fn main() -> std::io::Result<()> {
 
     let listener = TcpListener::bind(("127.0.0.1", port)).unwrap();
 
-    // let mut buffer = [0; 1024];
-    let mut buffer: Vec<u8> = vec![];
+    let mut buffer = [0; 1024];
+    // let mut buffer: Vec<u8> = vec![];
 
     for stream in listener.incoming() {
         let Ok(mut stream) = stream else {
@@ -30,12 +30,12 @@ fn main() -> std::io::Result<()> {
             ));
         };
 
-        let mut buf_reader = BufReader::new(&stream);
+        // let mut buf_reader = BufReader::new(&stream);
 
-        buf_reader.read_to_end(&mut buffer);
-        
+        stream.read(&mut buffer);
+
         println!("Received message for {}", port);
-        let Ok(message) = bincode::deserialize::<Vec<Message>>(&buffer) else {
+        let Ok(message) = bincode::deserialize::<Message>(&buffer) else {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "Could not deserialize message",
@@ -43,25 +43,37 @@ fn main() -> std::io::Result<()> {
         };
 
         println!("Message: {:#?}", message.clone());
-        // match message.message_type {
-        //     Type::Request(transaction) => {
-        //         let node = handle_transactions(
-        //             transaction,
-        //             port,
-        //             message.neighbour.expect("No neighbour"),
-        //         );
-        //         // println!("{:#?}", node);
-        //         let Ok(byte_node) = bincode::serialize(&node) else {
-        //             return Err(io::Error::new(
-        //                 io::ErrorKind::Other,
-        //                 "Could not serialize Node",
-        //             ));
-        //         };
-        //         stream.write_all(&byte_node);
-        //         stream.flush();
-        //     }
-        //     Type::Response(response) => handle_response(response),
-        // }
+
+        // Split into new function
+        match message.message_type {
+            Type::Request(transaction) => {
+                let node = handle_transactions(
+                    transaction,
+                    port,
+                    message.neighbour.expect("No neighbour"),
+                );
+                // println!("{:#?}", node);
+                let Ok(byte_node) = bincode::serialize(&node) else {
+                    return Err(io::Error::new(
+                        io::ErrorKind::Other,
+                        "Could not serialize Node",
+                    ));
+                };
+                stream.write(&byte_node);
+                stream.flush();
+            }
+            Type::Response(response) => handle_response(response),
+            Type::Chunk(ref transaction_chunk) => {
+                let neighbour = message.clone().neighbour.expect("No neighbour");
+                let _ = transaction_chunk.iter().map(|transaction| {
+                    handle_transactions(
+                        transaction.clone(),
+                        port,
+                        message.clone().neighbour.expect("No neighbour"),
+                    )
+                });
+            }
+        }
     }
     Ok(())
 }

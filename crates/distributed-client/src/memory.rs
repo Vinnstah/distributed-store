@@ -23,7 +23,7 @@ where
     }
 
     pub fn add_new_server(&mut self, id: NodeID) {
-        self.list_of_servers.elements.push_back(id)
+        self.list_of_servers.elements.push(id)
     }
 
     pub fn insert_value_for_nodes(&mut self, key: T, nodes: Vec<NodeID>) {
