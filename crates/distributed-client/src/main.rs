@@ -2,7 +2,9 @@ use distributed_client::memory::ClientMemory;
 use distributed_client::message_dispatch::Client;
 use models::message::CircularList;
 use models::node::NodeID;
+use models::tcp_client::Stream;
 use std::env;
+use std::net::TcpStream;
 use std::sync::{Arc, Mutex};
 
 fn main() -> std::io::Result<()> {
@@ -14,6 +16,8 @@ fn main() -> std::io::Result<()> {
         .parse()
         .expect("Failed to parse arg as u16");
 
+    let client = Client::new(Stream::new());
+    
     let list_of_servers = Arc::new(CircularList::new(vec![port, port + 1, port + 2]));
     let mut client_memory = Arc::new(Mutex::new(ClientMemory::<String>::new(CircularList::new(
         vec![
@@ -25,7 +29,7 @@ fn main() -> std::io::Result<()> {
     let servers = Client::initialize_nodes(list_of_servers);
 
     let message_stack = Client::create_message_stack(9000);
-    Client::dispatch_messages(message_stack, servers);
+    Client::dispatch_messages(&client, message_stack, servers);
 
     loop {}
 }

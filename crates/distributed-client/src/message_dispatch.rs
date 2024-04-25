@@ -1,40 +1,28 @@
 use std::{
-    borrow::Borrow,
     io::{self, Read, Write},
     net::TcpStream,
-    ops::Rem,
-    slice::Chunks,
+    sync::Arc,
+    thread,
 };
 
 use models::{
-    message::{CircularIterator, CircularList, Insert, Message, MessageID, Transaction, Type},
-    node::NodeID,
+    message::{Insert, Message, MessageID, Transaction, Type},
+    node::NodeID, tcp_client::{Stream, TcpClient},
 };
 use rand::random;
 
+
 pub struct Client {
-    stream: dyn TcpClient,
-}
-
-pub trait TcpClient {
-    fn write(&self, buffer: Vec<u8>, port: u16) -> io::Result<()>;
-    fn read(&self, buffer: &mut Vec<u8>, port: u16) -> io::Result<usize>;
-}
-
-impl TcpClient for Client {
-    fn write(&self, buffer: Vec<u8>, port: u16) -> io::Result<()> {
-        let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
-        let _ = stream.write_all(&buffer);
-        stream.flush()
-    }
-
-    fn read(&self, buffer: &mut Vec<u8>, port: u16) -> io::Result<usize> {
-        let mut stream = TcpStream::connect(("127.0.0.1", port)).unwrap();
-        stream.read_to_end(buffer)
-    }
+    stream: Stream
 }
 
 impl Client {
+
+    
+    pub fn new(stream: Stream) -> Self {
+        Self { stream }
+    }
+    
     pub fn create_message_stack(amount: usize) -> Vec<Transaction> {
         let mut stack_of_messages: Vec<Transaction> = vec![];
         for _ in 0..amount {
@@ -47,7 +35,7 @@ impl Client {
         stack_of_messages
     }
 
-    pub fn dispatch_messages(messages: Vec<Transaction>, servers: Vec<u16>) {
+    pub fn dispatch_messages(&self, messages: Vec<Transaction>, servers: Vec<u16>) {
         let chunked_messages = messages.chunks(10);
         println!("Create {} chunks", chunked_messages.len());
 
@@ -57,6 +45,7 @@ impl Client {
             .for_each(|(index, chunk)| {
                 let server_index = (index + 1) % servers.len();
                 Self::dispatch_chunk(
+                    self,
                     chunk,
                     &servers[server_index],
                     servers[(index + 2) % servers.len()],
@@ -64,7 +53,7 @@ impl Client {
             });
     }
 
-    pub fn dispatch_chunk(chunk: &[Transaction], server: &u16, ngb: u16) {
+    pub fn dispatch_chunk(&self, chunk: &[Transaction], server: &u16, ngb: u16) {
         let mut stream = TcpStream::connect(("127.0.0.1", server.to_owned())).unwrap();
 
         let message = Message::new(
@@ -74,9 +63,10 @@ impl Client {
         );
 
         let mut buffer = bincode::serialize(&message).unwrap();
-        stream.write_all(&buffer);
+        // stream.write_all(&buffer);
+        self.stream.write(buffer, *server).unwrap();
         // add_to_local_memory(&message, servers[index]);
-        stream.flush();
+        // stream.flush();
     }
 
     pub fn add_neighbour(chunk: &[Message], index: usize, servers: Vec<u16>) -> &[Message] {
@@ -89,31 +79,6 @@ impl Client {
         }
         chunk
     }
-    // pub fn dispatch_messages(messages: Vec<Message>, servers: Vec<u16>) {
-
-    //     let chunked_messages = messages.chunks(messages.len() / servers.len());
-    //     println!("Create {} chunks", chunked_messages.len());
-
-    //     chunked_messages
-    //         .into_iter()
-    //         .enumerate()
-    //         .for_each(|(index, chunk)| {
-    //             let mut stream = TcpStream::connect(("127.0.0.1", servers[index])).unwrap();
-    //             println!("Chunk {}", index);
-    //             for message in chunk.to_owned().iter_mut() {
-    //                 if index == servers.len() - 1 {
-    //                     message.neighbour = Some(NodeID::from_u16(servers[0]));
-    //                 } else {
-    //                     message.neighbour = Some(NodeID::from_u16(servers[index + 1]));
-    //                 }
-    //                 println!("Message: {:#?}", &message);
-    //                 let mut buffer = bincode::serialize(&message).unwrap();
-    //                 stream.write_all(&buffer);
-    //                 add_to_local_memory(&message, servers[index]);
-    //                 stream.flush();
-    //             }
-    //         });
-    // }
 
     fn add_to_local_memory(message: &Message, server: u16) {
         println!("{}", server);
