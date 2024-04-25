@@ -10,10 +10,10 @@ use models::{
     node::NodeID,
 };
 
-use crate::message_dispatch::Client;
+use crate::client::Client;
 
 impl Client {
-    pub fn initialize_nodes(list_of_servers: Arc<CircularList<u16>>) -> Vec<u16> {
+    pub fn initialize_nodes(&mut self, list_of_servers: Arc<CircularList<u16>>) {
         let mut initialized_nodes: Arc<Mutex<[Option<u16>; 10]>> = Arc::new(Mutex::new([None; 10]));
 
         <Vec<u16> as Clone>::clone(&list_of_servers.elements)
@@ -42,13 +42,12 @@ impl Client {
                 handle.join().unwrap();
             });
 
-        let list_of_intialized_servers: Vec<u16> = initialized_nodes
+        self.servers = initialized_nodes
             .lock()
             .unwrap()
             .into_iter()
             .flatten()
+            .map(|x| x.into())
             .collect();
-
-        list_of_intialized_servers
     }
 }

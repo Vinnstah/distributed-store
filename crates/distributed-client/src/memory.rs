@@ -27,6 +27,7 @@ where
     }
 
     pub fn insert_value_for_nodes(&mut self, key: T, nodes: Vec<NodeID>) {
+        println!("Added value for nodes: {:#?}", nodes);
         self.value_node_map.insert(key, nodes);
     }
 

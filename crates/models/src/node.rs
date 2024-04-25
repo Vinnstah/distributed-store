@@ -35,3 +35,15 @@ impl NodeID {
         NodeID(id.to_string())
     }
 }
+
+impl Into<u16> for NodeID {
+    fn into(self) -> u16 {
+        self.0.parse::<u16>().expect("Failed to parse String to u16")
+    }
+}
+
+impl From<u16> for NodeID {
+    fn from(value: u16) -> Self {
+        Self(value.to_string())
+    }
+}

@@ -1,88 +1,48 @@
-use std::{
-    io::{self, Read, Write},
-    net::TcpStream,
-    sync::Arc,
-    thread,
-};
+use std::net::TcpStream;
 
 use models::{
-    message::{Insert, Message, MessageID, Transaction, Type},
-    node::NodeID, tcp_client::{Stream, TcpClient},
+    message::{Message, MessageID, Transaction, Type},
+    node::NodeID,
+    tcp_client::TcpClient,
 };
-use rand::random;
 
-
-pub struct Client {
-    stream: Stream
-}
+use crate::client::Client;
 
 impl Client {
-
-    
-    pub fn new(stream: Stream) -> Self {
-        Self { stream }
-    }
-    
-    pub fn create_message_stack(amount: usize) -> Vec<Transaction> {
-        let mut stack_of_messages: Vec<Transaction> = vec![];
-        for _ in 0..amount {
-            stack_of_messages.push(Transaction::Insert(Insert::new(
-                MessageID::new(),
-                random::<u16>(),
-            )));
-        }
-        println!("Create stack of {} messages", amount);
-        stack_of_messages
-    }
-
-    pub fn dispatch_messages(&self, messages: Vec<Transaction>, servers: Vec<u16>) {
-        let chunked_messages = messages.chunks(10);
+    pub fn dispatch_messages(&mut self) {
+        let message_stack = self.message_stack.clone();
+        let chunked_messages = message_stack.chunks(10);
         println!("Create {} chunks", chunked_messages.len());
 
         chunked_messages
             .into_iter()
             .enumerate()
             .for_each(|(index, chunk)| {
-                let server_index = (index + 1) % servers.len();
-                Self::dispatch_chunk(
-                    self,
+                let server_index = (index + 1) % self.servers.len();
+                self.dispatch_chunk(
                     chunk,
-                    &servers[server_index],
-                    servers[(index + 2) % servers.len()],
+                    self.servers[server_index].clone(),
+                    self.servers[(index + 2) % self.servers.len()].clone(),
                 );
             });
     }
 
-    pub fn dispatch_chunk(&self, chunk: &[Transaction], server: &u16, ngb: u16) {
-        let mut stream = TcpStream::connect(("127.0.0.1", server.to_owned())).unwrap();
+    pub fn dispatch_chunk(&mut self, chunk: &[Transaction], server: NodeID, ngb: NodeID) {
+        let mut stream = TcpStream::connect((
+            "127.0.0.1",
+            Into::<u16>::into(<NodeID as Clone>::clone(&server)),
+        ))
+        .unwrap();
 
-        let message = Message::new(
-            MessageID::new(),
-            Type::Chunk(chunk.to_vec()),
-            Some(NodeID::from_u16(ngb)),
-        );
+        let message = Message::new(MessageID::new(), Type::Chunk(chunk.to_vec()), Some(ngb));
 
         let mut buffer = bincode::serialize(&message).unwrap();
-        // stream.write_all(&buffer);
-        self.stream.write(buffer, *server).unwrap();
-        // add_to_local_memory(&message, servers[index]);
-        // stream.flush();
-    }
 
-    pub fn add_neighbour(chunk: &[Message], index: usize, servers: Vec<u16>) -> &[Message] {
-        for message in chunk.to_owned().iter_mut() {
-            if index == servers.len() - 1 {
-                message.neighbour = Some(NodeID::from_u16(servers[0]));
-            } else {
-                message.neighbour = Some(NodeID::from_u16(servers[index + 1]));
-            }
-        }
-        chunk
-    }
+        self.stream
+            .write(buffer, Into::<u16>::into(<NodeID as Clone>::clone(&server)))
+            .unwrap();
 
-    fn add_to_local_memory(message: &Message, server: u16) {
-        println!("{}", server);
-        // println!("Added {:#?} to local memory", message)
+        self.add_to_local_memory(&message, &server)
     }
 }
 

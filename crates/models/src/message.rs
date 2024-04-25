@@ -36,7 +36,7 @@ pub enum Type {
 #[serde(rename_all = "lowercase")]
 pub enum Response {
     InitOk(Node),
-    InsertOk(Node)
+    InsertOk(Node),
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -61,7 +61,7 @@ pub struct Delete {}
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Insert {
     id: MessageID,
-    value: u16,
+    pub value: u16,
 }
 
 impl Insert {
@@ -94,7 +94,7 @@ pub struct CircularList<T> {
 impl<NodeID> CircularList<NodeID> {
     pub fn new(elements: Vec<NodeID>) -> Self {
         Self {
-            elements: Vec::from(elements),
+            elements,
         }
     }
 

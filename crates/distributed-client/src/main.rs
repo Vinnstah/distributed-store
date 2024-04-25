@@ -1,11 +1,9 @@
-use distributed_client::memory::ClientMemory;
-use distributed_client::message_dispatch::Client;
+use distributed_client::client::Client;
 use models::message::CircularList;
 use models::node::NodeID;
 use models::tcp_client::Stream;
 use std::env;
-use std::net::TcpStream;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -16,20 +14,20 @@ fn main() -> std::io::Result<()> {
         .parse()
         .expect("Failed to parse arg as u16");
 
-    let client = Client::new(Stream::new());
-    
-    let list_of_servers = Arc::new(CircularList::new(vec![port, port + 1, port + 2]));
-    let mut client_memory = Arc::new(Mutex::new(ClientMemory::<String>::new(CircularList::new(
-        vec![
-            NodeID::from_u16(port),
-            NodeID::from_u16(port + 1),
-            NodeID::from_u16(port + 2),
-        ],
-    ))));
-    let servers = Client::initialize_nodes(list_of_servers);
+    let servers = vec![
+        NodeID::from_u16(port),
+        NodeID::from_u16(port + 1),
+        NodeID::from_u16(port + 2),
+    ];
+    let mut client = Client::new(Stream::new(), servers);
 
-    let message_stack = Client::create_message_stack(9000);
-    Client::dispatch_messages(&client, message_stack, servers);
+    let list_of_servers = Arc::new(CircularList::new(vec![port, port + 1, port + 2]));
+
+    client.initialize_nodes(list_of_servers);
+
+    client.create_message_stack(900);
+
+    client.dispatch_messages();
 
     loop {}
 }

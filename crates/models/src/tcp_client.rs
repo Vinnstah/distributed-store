@@ -15,7 +15,7 @@ pub struct Stream {}
 
 impl Stream {
     pub fn new() -> Self {
-        Self {  }
+        Self {}
     }
 }
 
