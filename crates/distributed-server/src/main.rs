@@ -3,6 +3,7 @@ use std::net::TcpListener;
 use std::{env, io};
 
 use models::message::{Response, Type};
+use models::tcp_client::{Stream, TcpClient};
 use models::{
     message::{Message, Transaction},
     node::{Node, NodeID},
@@ -19,8 +20,8 @@ fn main() -> std::io::Result<()> {
 
     let listener = TcpListener::bind(("127.0.0.1", port)).unwrap();
 
-    let mut buffer = [0; 1024];
-    // let mut buffer: Vec<u8> = vec![];
+    // let mut buffer = [0; 1024];
+    let mut buffer: Vec<u8> = vec![];
 
     for stream in listener.incoming() {
         let Ok(mut stream) = stream else {
@@ -29,9 +30,7 @@ fn main() -> std::io::Result<()> {
                 "Could not unwrap TcpStream",
             ));
         };
-
-        // let mut buf_reader = BufReader::new(&stream);
-
+        
         stream.read(&mut buffer);
 
         println!("Received message for {}", port);
@@ -59,7 +58,7 @@ fn main() -> std::io::Result<()> {
                         "Could not serialize Node",
                     ));
                 };
-                stream.write(&byte_node);
+                // stream.write(buffer, port);
                 stream.flush();
             }
             Type::Response(response) => handle_response(response),
